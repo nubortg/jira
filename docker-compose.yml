@@ -1,0 +1,46 @@
+version: '3.3'
+services:
+  postgres-jira:
+    image: postgres:15
+    container_name: postgres-jira
+    environment:
+      - TZ=Asia/Yekaterinburg
+      - POSTGRES_DB=jira
+      - POSTGRES_PASSWORD=PASSWORD
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    #ports:
+      #- 5432:5432
+    restart: unless-stopped
+    networks:
+      - atlas
+
+  jira:
+    image: atlassian/confluence:8.1.0-m78-jdk11
+    container_name: jira
+    environment:
+      - TZ=Asia/Yekaterinburg
+      - JAVA_OPTS='-javaagent:/opt/atlassian/jira/atlassian-agent.jar'
+      - ATL_JDBC_URL=jdbc:postgresql://postgres-jira:5432/jira
+      - ATL_JDBC_USER=postgres
+      - ATL_JDBC_PASSWORD=PASSWORD
+      - ATL_DB_TYPE=postgresql
+    volumes:
+      #- ./jira:/var/atlassian/application-data/jira
+      - ./atlassian-agent.jar:/opt/atlassian/jira/atlassian-agent.jar
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    networks:
+      - atlas
+    depends_on:
+      - postgres-jira
+
+networks:
+  atlas:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.18.0.0/24"
